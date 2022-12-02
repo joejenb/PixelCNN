@@ -54,13 +54,12 @@ class PixelCNN(nn.Module):
         super(PixelCNN, self).__init__()
 
         self._device = device
-        self._num_channels = config.num_channels
-        self._num_filters = config.num_filters
+        self._num_filters = 2 * config.num_filters
         self._num_categories = config.num_categories
         self._representation_dim = config.representation_dim
 
         self.main = nn.Sequential(
-            PixelBlock('A', self._num_in_channels, self._num_filters),
+            PixelBlock('A', 1, self._num_filters),
             PixelBlock('B', self._num_filters, self._num_filters),
             PixelBlock('B', self._num_filters, self._num_filters),
             PixelBlock('B', self._num_filters, self._num_filters),
