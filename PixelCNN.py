@@ -63,10 +63,6 @@ class PixelCNN(nn.Module):
             PixelBlock('B', self._num_filters, self._num_filters),
             PixelBlock('B', self._num_filters, self._num_filters),
             PixelBlock('B', self._num_filters, self._num_filters),
-            '''PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),'''
             nn.Conv2d(self._num_filters, self._num_categories, 1)
         )
     
