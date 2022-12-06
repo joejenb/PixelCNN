@@ -85,6 +85,7 @@ class PixelCNN(nn.Module):
         return xy_inter
 
     def denoise(self, x):
+        x = x * 1.
         for row in range(self._representation_dim):
             for column in range(self._representation_dim):
                 x[:, :, row, column].fill_(0)
