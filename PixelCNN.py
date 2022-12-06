@@ -87,7 +87,7 @@ class PixelCNN(nn.Module):
     def denoise(self, x):
         for row in range(self._representation_dim):
             for column in range(self._representation_dim):
-                x[:, :, row, column] = 0
+                x[:, :, row, column].fill_(0)
                 logits = self.main(x)
                 probabilities = F.softmax(logits[:, :, row, column], dim=-1).data
                 x[:, :, row, column] = torch.multinomial(probabilities, 1).int()
