@@ -77,7 +77,7 @@ class PixelCNN(nn.Module):
         for row in range(self._representation_dim):
             for column in range(self._representation_dim):
                 logits = self.forward(x_sample)
-                probabilities = F.softmax(logits[:, :, row, column], dim=-1).data
+                probabilities = F.softmax(logits[:, :, row, column], dim=-1)
                 x_sample[:, :, row, column] = torch.multinomial(probabilities, 1).int()
         
         return x_sample
@@ -93,7 +93,7 @@ class PixelCNN(nn.Module):
             for column in range(self._representation_dim):
                 x[:, :, row, column].fill_(0)
                 logits = self.forward(x)
-                probabilities = F.softmax(logits[:, :, row, column], dim=-1).data
+                probabilities = F.softmax(logits[:, :, row, column], dim=-1)
                 x[:, :, row, column] = torch.multinomial(probabilities, 1).int()
         return x
 
