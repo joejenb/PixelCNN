@@ -54,7 +54,7 @@ class PixelCNN(nn.Module):
         super(PixelCNN, self).__init__()
 
         self._device = device
-        self._num_filters = 2 * config.num_filters
+        self._num_filters = config.num_filters
         self._num_categories = config.num_categories
         self._representation_dim = config.representation_dim
 
@@ -89,13 +89,13 @@ class PixelCNN(nn.Module):
         return xy_inter
 
     def denoise(self, x):
+        x_new = x
         for row in range(self._representation_dim):
             for column in range(self._representation_dim):
-                x[:, :, row, column].fill_(0)
                 logits = self.forward(x)
                 probabilities = F.softmax(logits[:, :, row, column], dim=-1)
-                x[:, :, row, column] = torch.multinomial(probabilities, 1).int()
-        return x
+                x_new[:, :, row, column] = torch.multinomial(probabilities, 1).int()
+        return x_new
 
     def forward(self, x):
         x = x * 1.
