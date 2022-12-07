@@ -136,11 +136,11 @@ def test(model, test_loader):
         ZY_inter = model.interpolate(Z, Y)
         X_sample = model.sample()
 
-        example_images = [wandb.Image(img) for img in X]
-        example_reconstructions = [wandb.Image(recon_img) for recon_img in X_sample]
-        example_Z = [wandb.Image(recon_img) for recon_img in Z]
-        example_Y = [wandb.Image(recon_img) for recon_img in Y]
-        example_interpolations = [wandb.Image(inter_img) for inter_img in ZY_inter]
+        example_images = [wandb.Image(img / 255) for img in X]
+        example_reconstructions = [wandb.Image(recon_img / 255) for recon_img in X_sample]
+        example_Z = [wandb.Image(recon_img / 255) for recon_img in Z]
+        example_Y = [wandb.Image(recon_img / 255) for recon_img in Y]
+        example_interpolations = [wandb.Image(inter_img / 255) for inter_img in ZY_inter]
 
     wandb.log({
         "Test Inputs": example_images,
