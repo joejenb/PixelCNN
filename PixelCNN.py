@@ -115,6 +115,7 @@ class PixelCNN(nn.Module):
 
     def denoise(self, x):
         x_new = x
+        print(x.size())
 
         for h in range(self._representation_dim):
             for w in range(self._representation_dim):
