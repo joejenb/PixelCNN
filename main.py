@@ -90,7 +90,7 @@ def train(model, train_loader, optimiser, scheduler):
         X = X.to(model.device)
         optimiser.zero_grad()
 
-        X_logits = model((2 * X / 255) - 1)
+        X_logits = model((2 * X.float() / 255.0) - 1)
 
         nll = F.cross_entropy(X_logits, X, reduction='none')
         prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.tensor(1)))
@@ -125,7 +125,7 @@ def test(model, test_loader):
         for X, _ in test_loader:
             X = X.to(model.device)
 
-            X_logits = model((2 * X / 255) - 1)
+            X_logits = model((2 * X.float() / 255.0) - 1)
 
             nll = F.cross_entropy(X_logits, X, reduction='none')
             prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.Tensor(1)))
