@@ -136,7 +136,7 @@ class PixelCNN(nn.Module):
             v_stack, h_stack = layer(v_stack, h_stack)
 
         out = self.conv_out(F.elu(h_stack))
-        print(out.size())
+        print(x.size(), out.size())
 
         out = out.reshape(out.shape[0], self._num_categories, self._num_channels, self._representation_dim, self._representation_dim)
         return out
