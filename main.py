@@ -87,7 +87,6 @@ def train(model, train_loader, optimiser, scheduler):
     train_res_recon_error = 0
 
     for X, _ in train_loader:
-        print(X.max())
         X = X.to(model.device)
         optimiser.zero_grad()
 
@@ -100,7 +99,7 @@ def train(model, train_loader, optimiser, scheduler):
         loss.backward()
         optimiser.step()
         
-        train_res_recon_error += prediction_error.item()
+        train_res_recon_error += loss.item()
 
     scheduler.step()
     wandb.log({
@@ -132,7 +131,7 @@ def test(model, test_loader):
             prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.Tensor(1)))
             loss = prediction_error.mean()
             
-            test_res_recon_error += prediction_error.item()
+            test_res_recon_error += loss.item()
 
         ZY_inter = model.interpolate(Z, Y)
         X_sample = model.sample()
