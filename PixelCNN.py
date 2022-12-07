@@ -91,7 +91,7 @@ class PixelCNN(nn.Module):
         self.conv_out = nn.Conv2d(self.num_hiddens, self.num_channels * self.num_categories, kernel_size=1, padding=0)
     
     def sample(self):
-        x_sample = torch.Tensor(1, 1, self.representation_dim, self.representation_dim, dtype=torch.long).to(self.device) - 1
+        x_sample = torch.Tensor((1, 1, self.representation_dim, self.representation_dim), dtype=torch.long).to(self.device) - 1
         x_sample.fill_(0)
 
         for h in range(self.representation_dim):
