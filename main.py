@@ -173,7 +173,7 @@ def main():
 
     for epoch in range(config.epochs):
 
-        train(model, train_loader, optimiser, scheduler)
+        #train(model, train_loader, optimiser, scheduler)
         test(model, test_loader)
 
         if not epoch % 5:
