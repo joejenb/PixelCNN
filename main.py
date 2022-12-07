@@ -167,13 +167,13 @@ def main():
         model.load_state_dict(torch.load(checkpoint_location, map_location=device))
 
     optimiser = optim.Adam(model.parameters(), lr=config.learning_rate, amsgrad=False)
-    scheduler = optim.lr_scheduler.ExponentialLR(optimiser, gamma=config.gamma)
+    scheduler = optim.lr_scheduler.StepLR(optimiser, 1, gamma=config.gamma)
 
     wandb.watch(model, log="all")
 
     for epoch in range(config.epochs):
 
-        #train(model, train_loader, optimiser, scheduler)
+        train(model, train_loader, optimiser, scheduler)
         test(model, test_loader)
 
         if not epoch % 5:
