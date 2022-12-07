@@ -35,7 +35,7 @@ def get_data_loaders():
         transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Resize(config.image_size),
-                transforms.Normalize((0.1307,), (0.3081,))
+                #transforms.Normalize((0.1307,), (0.3081,))
             ])
 
         train_set = torchvision.datasets.MNIST(root="/MNIST/", train=True, download=True, transform=transform)
@@ -83,12 +83,13 @@ def train(model, train_loader, optimiser, scheduler):
     train_res_recon_error = 0
 
     for X, _ in train_loader:
+        print(X.max())
         X = X.to(model.device)
         optimiser.zero_grad()
 
-        X_logits = model(X)
+        X_logits = model((2 * X / model.num_categories) - 1)
 
-        nll = F.cross_entropy(X_logits, X, reduction='none')
+        nll = F.cross_entropy(X_logits, X.long(), reduction='none')
         prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.tensor(1)))
         loss = prediction_error.mean()
 
@@ -121,9 +122,9 @@ def test(model, test_loader):
         for X, _ in test_loader:
             X = X.to(model.device)
 
-            X_logits = model(X)
+            X_logits = model((2 * X / model.num_categories) - 1)
 
-            nll = F.cross_entropy(X_logits, X, reduction='none')
+            nll = F.cross_entropy(X_logits, X.long(), reduction='none')
             prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.Tensor(1)))
             loss = prediction_error.mean()
             
