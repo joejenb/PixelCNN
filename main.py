@@ -16,7 +16,7 @@ import os
 import wandb
 
 from PixelCNN import PixelCNN
-from configs.ffhq_64_config import config
+from configs.mnist_28_config import config
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", type=str)
@@ -88,8 +88,8 @@ def train(model, train_loader, optimiser, scheduler):
 
         X_logits = model(X)
 
-        nll = F.cross_entropy(X_logits, X, reduction='none') / config.data_variance
-        prediction_error = nll.mean(dim=[1,2,3]) * torch.log2(torch.exp(torch.tensor(1)))
+        nll = F.cross_entropy(X_logits, X, reduction='none')
+        prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.tensor(1)))
         loss = prediction_error.mean()
 
         loss.backward()
@@ -123,8 +123,8 @@ def test(model, test_loader):
 
             X_logits = model(X)
 
-            nll = F.cross_entropy(X_logits, X, reduction='none') / config.data_variance
-            prediction_error = nll.mean(dim=[1,2,3]) * torch.log2(torch.exp(torch.Tensor(1)))
+            nll = F.cross_entropy(X_logits, X, reduction='none')
+            prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.Tensor(1)))
             loss = prediction_error.mean()
             
             test_res_recon_error += prediction_error.item()
