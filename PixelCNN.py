@@ -70,33 +70,33 @@ class PixelCNN(nn.Module):
         super(PixelCNN, self).__init__()
 
         self.device = device
-        self._num_hiddens = config.num_hiddens
-        self._num_channels = config.num_channels
-        self._num_categories = config.num_categories
-        self._representation_dim = config.representation_dim
+        self.num_hiddens = config.num_hiddens
+        self.num_channels = config.num_channels
+        self.num_categories = config.num_categories
+        self.representation_dim = config.representation_dim
 
-        self.conv_vstack = VerticalConv(self._num_channels, self._num_hiddens, mask_center=True)
-        self.conv_hstack = HorizontalConv(self._num_channels, self._num_hiddens, mask_center=True)
+        self.conv_vstack = VerticalConv(self.num_channels, self.num_hiddens, mask_center=True)
+        self.conv_hstack = HorizontalConv(self.num_channels, self.num_hiddens, mask_center=True)
 
         self.conv_layers = nn.ModuleList([
-            GatedMaskedConv(self._num_hiddens),
-            GatedMaskedConv(self._num_hiddens, dilation=2),
-            GatedMaskedConv(self._num_hiddens),
-            GatedMaskedConv(self._num_hiddens, dilation=4),
-            GatedMaskedConv(self._num_hiddens),
-            GatedMaskedConv(self._num_hiddens, dilation=2),
-            GatedMaskedConv(self._num_hiddens)
+            GatedMaskedConv(self.num_hiddens),
+            GatedMaskedConv(self.num_hiddens, dilation=2),
+            GatedMaskedConv(self.num_hiddens),
+            GatedMaskedConv(self.num_hiddens, dilation=4),
+            GatedMaskedConv(self.num_hiddens),
+            GatedMaskedConv(self.num_hiddens, dilation=2),
+            GatedMaskedConv(self.num_hiddens)
         ])
 
-        self.conv_out = nn.Conv2d(self._num_hiddens, self._num_channels * self._num_categories, kernel_size=1, padding=0)
+        self.conv_out = nn.Conv2d(self.num_hiddens, self.num_channels * self.num_categories, kernel_size=1, padding=0)
     
     def sample(self):
-        x_sample = torch.Tensor(1, 1, self._representation_dim, self._representation_dim).to(self.device)
+        x_sample = torch.Tensor(1, 1, self.representation_dim, self.representation_dim).to(self.device)
         x_sample.fill_(0)
 
-        for h in range(self._representation_dim):
-            for w in range(self._representation_dim):
-                for c in range(self._num_channels):
+        for h in range(self.representation_dim):
+            for w in range(self.representation_dim):
+                for c in range(self.num_channels):
 
                     pred = self.forward(x_sample[:,:,:h+1,:])
                     probs = F.softmax(pred[:,:,c,h,w], dim=-1)
@@ -114,9 +114,9 @@ class PixelCNN(nn.Module):
     def denoise(self, x):
         x_new = x
 
-        for h in range(self._representation_dim):
-            for w in range(self._representation_dim):
-                for c in range(self._num_channels):
+        for h in range(self.representation_dim):
+            for w in range(self.representation_dim):
+                for c in range(self.num_channels):
 
                     pred = self.forward(x[:,:,:h+1,:])
                     probs = F.softmax(pred[:,:,c,h,w], dim=-1)
@@ -135,5 +135,5 @@ class PixelCNN(nn.Module):
 
         out = self.conv_out(F.elu(h_stack))
 
-        out = out.reshape(out.shape[0], self._num_categories, self._num_channels, out.shape[-2], self._representation_dim)
+        out = out.reshape(out.shape[0], self.num_categories, self.num_channels, out.shape[-2], self.representation_dim)
         return out
