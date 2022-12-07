@@ -73,12 +73,12 @@ class PixelCNN(nn.Module):
 
         self._device = device
         self._num_hiddens = config.num_hiddens
-        self._num_filters = config.num_filters
+        self._num_channels = config.num_channels
         self._num_categories = config.num_categories
         self._representation_dim = config.representation_dim
 
-        self.conv_vstack = VerticalConv(self._num_filters, self._num_hiddens, mask_center=True)
-        self.conv_hstack = HorizontalConv(self._num_filters, self._num_hiddens, mask_center=True)
+        self.conv_vstack = VerticalConv(self._num_channels, self._num_hiddens, mask_center=True)
+        self.conv_hstack = HorizontalConv(self._num_channels, self._num_hiddens, mask_center=True)
 
         self.conv_layers = nn.ModuleList([
             GatedMaskedConv(self._num_hiddens),
@@ -90,7 +90,7 @@ class PixelCNN(nn.Module):
             GatedMaskedConv(self._num_hiddens)
         ])
 
-        self.conv_out = nn.Conv2d(self._num_hiddens, self._num_filters * self._num_categories, kernel_size=1, padding=0)
+        self.conv_out = nn.Conv2d(self._num_hiddens, self._num_channels * self._num_categories, kernel_size=1, padding=0)
     
     def sample(self):
         x_sample = torch.Tensor(1, 1, self._representation_dim, self._representation_dim).to(self._device)
@@ -98,7 +98,7 @@ class PixelCNN(nn.Module):
 
         for h in range(self._representation_dim):
             for w in range(self._representation_dim):
-                for c in range(self._num_filters):
+                for c in range(self._num_channels):
                     if (x_sample[:,c,h,w] != -1).all().item():
                         continue
 
@@ -120,7 +120,7 @@ class PixelCNN(nn.Module):
 
         for h in range(self._representation_dim):
             for w in range(self._representation_dim):
-                for c in range(self._num_filters):
+                for c in range(self._num_channels):
                     if (x[:,c,h,w] != -1).all().item():
                         continue
 
@@ -142,5 +142,5 @@ class PixelCNN(nn.Module):
 
         out = self.conv_out(F.elu(h_stack))
 
-        out = out.reshape(out.shape[0], self._num_categories, self._num_filters, self._representation_dim, self._representation_dim)
+        out = out.reshape(out.shape[0], self._num_categories, self._num_channels, self._representation_dim, self._representation_dim)
         return out
