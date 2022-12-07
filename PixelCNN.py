@@ -132,7 +132,6 @@ class PixelCNN(nn.Module):
 
     def forward(self, x):
         x = x * 1.
-        x = (x.float() / 255.0) * 2 - 1
 
         v_stack = self.conv_vstack(x)
         h_stack = self.conv_hstack(x)
