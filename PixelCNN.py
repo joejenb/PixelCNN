@@ -92,7 +92,7 @@ class PixelCNN(nn.Module):
     
     def sample(self):
         x_sample = torch.Tensor(1, 1, self.representation_dim, self.representation_dim).long().to(self.device) - 1
-        x_sample.fill_(0)
+        #x_sample.fill_(0)
 
         for h in range(self.representation_dim):
             for w in range(self.representation_dim):
