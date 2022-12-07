@@ -30,11 +30,15 @@ wandb.watch_called = False # Re-run the model without restarting the runtime, un
 # WandB – Config is a variable that holds and saves hyperparameters and inputs
 config = wandb.config          # Initialize config
 
+def discretize(sample):
+    return (sample * 255).to(torch.long)
+
 def get_data_loaders():
     if config.data_set == "MNIST":
         transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Resize(config.image_size),
+                discretize
                 #transforms.Normalize((0.1307,), (0.3081,))
             ])
 
@@ -87,9 +91,9 @@ def train(model, train_loader, optimiser, scheduler):
         X = X.to(model.device)
         optimiser.zero_grad()
 
-        X_logits = model((2 * X / model.num_categories) - 1)
+        X_logits = model((2 * X / 255) - 1)
 
-        nll = F.cross_entropy(X_logits, X.long(), reduction='none')
+        nll = F.cross_entropy(X_logits, X, reduction='none')
         prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.tensor(1)))
         loss = prediction_error.mean()
 
@@ -122,9 +126,9 @@ def test(model, test_loader):
         for X, _ in test_loader:
             X = X.to(model.device)
 
-            X_logits = model((2 * X / model.num_categories) - 1)
+            X_logits = model((2 * X / 255) - 1)
 
-            nll = F.cross_entropy(X_logits, X.long(), reduction='none')
+            nll = F.cross_entropy(X_logits, X, reduction='none')
             prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.Tensor(1)))
             loss = prediction_error.mean()
             
