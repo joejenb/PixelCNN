@@ -99,8 +99,6 @@ class PixelCNN(nn.Module):
         for h in range(self._representation_dim):
             for w in range(self._representation_dim):
                 for c in range(self._num_channels):
-                    if (x_sample[:,c,h,w] != -1).all().item():
-                        continue
 
                     pred = self.forward(x_sample[:,:,:h+1,:])
                     probs = F.softmax(pred[:,:,c,h,w], dim=-1)
@@ -121,8 +119,6 @@ class PixelCNN(nn.Module):
         for h in range(self._representation_dim):
             for w in range(self._representation_dim):
                 for c in range(self._num_channels):
-                    if (x[:,c,h,w] != -1).all().item():
-                        continue
 
                     pred = self.forward(x[:,:,:h+1,:])
                     probs = F.softmax(pred[:,:,c,h,w], dim=-1)
