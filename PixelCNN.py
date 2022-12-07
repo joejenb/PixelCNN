@@ -6,79 +6,106 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class MaskedConv(nn.Module):
 
-class MaskedCNN(nn.Conv2d):
-	def __init__(self, mask_type, *args, **kwargs):
-		self.mask_type = mask_type
-		assert mask_type in ['A', 'B'], "Unknown Mask Type"
-		super(MaskedCNN, self).__init__(*args, **kwargs)
-		self.register_buffer('mask', self.weight.data.clone())
+    def __init__(self, c_in, c_out, mask, **kwargs):
+        super().__init__()
+        kernel_size = (mask.shape[0], mask.shape[1])
+        dilation = 1 if "dilation" not in kwargs else kwargs["dilation"]
+        padding = tuple([dilation*(kernel_size[i]-1)//2 for i in range(2)])
 
-		_, depth, height, width = self.weight.size()
-		self.mask.fill_(1)
-		if mask_type =='A':
-			self.mask[:,:,height//2,width//2:] = 0
-			self.mask[:,:,height//2+1:,:] = 0
-		else:
-			self.mask[:,:,height//2,width//2+1:] = 0
-			self.mask[:,:,height//2+1:,:] = 0
-
-	def forward(self, x):
-		self.weight.data*=self.mask
-		return super(MaskedCNN, self).forward(x)
-
-
-class Gated_Act(nn.Module):
-    def __init__(self):
-        super(Gated_Act, self).__init__()
+        self.conv = nn.Conv2d(c_in, c_out, kernel_size, padding=padding, **kwargs)
+        self.register_buffer('mask', mask[None,None])
 
     def forward(self, x):
-        return torch.tanh(x) * torch.sigmoid(x)
+        self.conv.weight.data *= self.mask # Ensures zero's at masked positions
+        return self.conv(x)
+class VerticalConv(MaskedConv):
 
+    def __init__(self, c_in, c_out, kernel_size=3, mask_center=False, **kwargs):
+        mask = torch.ones(kernel_size, kernel_size)
+        mask[kernel_size//2+1:,:] = 0
 
-class PixelBlock(nn.Module):
-    def __init__(self, mask_type="B", in_channels=128, out_channels=128, kernel_size=7):
-        super(PixelBlock, self).__init__()
-        self.f_pass = nn.Sequential(
-            MaskedCNN(mask_type, in_channels, out_channels, kernel_size, 1, kernel_size // 2, bias=False),
-            nn.BatchNorm2d(out_channels),
-            Gated_Act()
-        )
+        if mask_center:
+            mask[kernel_size//2,:] = 0
 
-    def forward(self,x):
-        return self.f_pass(x) 
+        super().__init__(c_in, c_out, mask, **kwargs)
 
+class HorizontalConv(MaskedConv):
+
+    def __init__(self, c_in, c_out, kernel_size=3, mask_center=False, **kwargs):
+        mask = torch.ones(1,kernel_size)
+        mask[0,kernel_size//2+1:] = 0
+
+        if mask_center:
+            mask[0,kernel_size//2] = 0
+
+        super().__init__(c_in, c_out, mask, **kwargs)
+
+class GatedMaskedConv(nn.Module):
+
+    def __init__(self, c_in, **kwargs):
+        super().__init__()
+        self.conv_vert = VerticalConv(c_in, c_out=2*c_in, **kwargs)
+        self.conv_horiz = HorizontalConv(c_in, c_out=2*c_in, **kwargs)
+        self.conv_vert_to_horiz = nn.Conv2d(2*c_in, 2*c_in, kernel_size=1, padding=0)
+        self.conv_horiz_1x1 = nn.Conv2d(c_in, c_in, kernel_size=1, padding=0)
+
+    def forward(self, v_stack, h_stack):
+        # Vertical stack (left)
+        v_stack_feat = self.conv_vert(v_stack)
+        v_val, v_gate = v_stack_feat.chunk(2, dim=1)
+        v_stack_out = torch.tanh(v_val) * torch.sigmoid(v_gate)
+
+        # Horizontal stack (right)
+        h_stack_feat = self.conv_horiz(h_stack)
+        h_stack_feat = h_stack_feat + self.conv_vert_to_horiz(v_stack_feat)
+        h_val, h_gate = h_stack_feat.chunk(2, dim=1)
+        h_stack_feat = torch.tanh(h_val) * torch.sigmoid(h_gate)
+        h_stack_out = self.conv_horiz_1x1(h_stack_feat)
+        h_stack_out = h_stack_out + h_stack
+
+        return v_stack_out, h_stack_out
 
 class PixelCNN(nn.Module):
     def __init__(self, config, device):
         super(PixelCNN, self).__init__()
 
         self._device = device
+        self._num_hiddens = config.num_hiddens
         self._num_filters = config.num_filters
         self._num_categories = config.num_categories
         self._representation_dim = config.representation_dim
 
-        self.main = nn.Sequential(
-            PixelBlock('A', 1, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            PixelBlock('B', self._num_filters, self._num_filters),
-            nn.Conv2d(self._num_filters, self._num_categories, 1)
-        )
+        self.conv_vstack = VerticalConv(self._num_filters, self._num_hiddens, mask_center=True)
+        self.conv_hstack = HorizontalConv(self._num_filters, self._num_hiddens, mask_center=True)
+
+        self.conv_layers = nn.ModuleList([
+            GatedMaskedConv(self._num_hiddens),
+            GatedMaskedConv(self._num_hiddens, dilation=2),
+            GatedMaskedConv(self._num_hiddens),
+            GatedMaskedConv(self._num_hiddens, dilation=4),
+            GatedMaskedConv(self._num_hiddens),
+            GatedMaskedConv(self._num_hiddens, dilation=2),
+            GatedMaskedConv(self._num_hiddens)
+        ])
+
+        self.conv_out = nn.Conv2d(self._num_hiddens, self._num_filters * self._num_categories, kernel_size=1, padding=0)
     
     def sample(self):
         x_sample = torch.Tensor(1, 1, self._representation_dim, self._representation_dim).to(self._device)
         x_sample.fill_(0)
 
-        for row in range(self._representation_dim):
-            for column in range(self._representation_dim):
-                logits = self.forward(x_sample)
-                probabilities = F.softmax(logits[:, :, row, column], dim=-1)
-                x_sample[:, :, row, column] = torch.multinomial(probabilities, 1).int()
+        for h in range(self._representation_dim):
+            for w in range(self._representation_dim):
+                for c in range(self._num_filters):
+                    if (x_sample[:,c,h,w] != -1).all().item():
+                        continue
+
+                    pred = self.forward(x_sample[:,:,:h+1,:])
+                    probs = F.softmax(pred[:,:,c,h,w], dim=-1)
+                    x_sample[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
+
         
         return x_sample
 
@@ -90,13 +117,30 @@ class PixelCNN(nn.Module):
 
     def denoise(self, x):
         x_new = x
-        for row in range(self._representation_dim):
-            for column in range(self._representation_dim):
-                logits = self.forward(x)
-                probabilities = F.softmax(logits[:, :, row, column], dim=-1)
-                x_new[:, :, row, column] = torch.multinomial(probabilities, 1).int()
+
+        for h in range(self._representation_dim):
+            for w in range(self._representation_dim):
+                for c in range(self._num_filters):
+                    if (x[:,c,h,w] != -1).all().item():
+                        continue
+
+                    pred = self.forward(x[:,:,:h+1,:])
+                    probs = F.softmax(pred[:,:,c,h,w], dim=-1)
+                    x_new[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
+
         return x_new
 
     def forward(self, x):
         x = x * 1.
-        return self.main(x)
+        x = (x.float() / 255.0) * 2 - 1
+
+        v_stack = self.conv_vstack(x)
+        h_stack = self.conv_hstack(x)
+        
+        for layer in self.conv_layers:
+            v_stack, h_stack = layer(v_stack, h_stack)
+
+        out = self.conv_out(F.elu(h_stack))
+
+        out = out.reshape(out.shape[0], self._num_categories, self._num_filters, self._representation_dim, self._representation_dim)
+        return out

@@ -88,8 +88,9 @@ def train(model, train_loader, optimiser, scheduler):
 
         X_logits = model(X)
 
-        prediction_error = F.cross_entropy(X_logits, X) / config.data_variance
-        loss = prediction_error
+        nll = F.cross_entropy(X_logits, X, reduction='none') / config.data_variance
+        prediction_error = nll.mean(dim=[1,2,3]) * torch.log2(torch.exp(1))
+        loss = prediction_error.mean()
 
         loss.backward()
         optimiser.step()
@@ -121,9 +122,12 @@ def test(model, test_loader):
             X = X.to(model.device)
 
             X_logits = model(X)
-            recon_error = F.mse_loss(X_logits, X) / config.data_variance
+
+            nll = F.cross_entropy(X_logits, X, reduction='none') / config.data_variance
+            prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
+            loss = prediction_error.mean()
             
-            test_res_recon_error += recon_error.item()
+            test_res_recon_error += prediction_error.item()
 
         ZY_inter = model.interpolate(Z, Y)
         X_sample = model.sample()
