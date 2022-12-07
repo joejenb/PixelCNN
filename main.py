@@ -93,7 +93,7 @@ def train(model, train_loader, optimiser, scheduler):
         X_logits = model((2 * X.float() / 255.0) - 1)
 
         nll = F.cross_entropy(X_logits, X, reduction='none')
-        prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.tensor(1)))
+        prediction_error = nll.mean(dim=[1,2,3]) * torch.log2(torch.exp(torch.tensor(1)))
         loss = prediction_error.mean()
 
         loss.backward()
@@ -128,7 +128,7 @@ def test(model, test_loader):
             X_logits = model((2 * X.float() / 255.0) - 1)
 
             nll = F.cross_entropy(X_logits, X, reduction='none')
-            prediction_error = nll.mean(dim=[1,2,3])# * torch.log2(torch.exp(torch.Tensor(1)))
+            prediction_error = nll.mean(dim=[1,2,3]) * torch.log2(torch.exp(torch.Tensor(1)))
             loss = prediction_error.mean()
             
             test_res_recon_error += loss.item()
