@@ -115,7 +115,6 @@ class PixelCNN(nn.Module):
 
     def denoise(self, x):
         x_new = x
-        print(x.size())
 
         for h in range(self._representation_dim):
             for w in range(self._representation_dim):
@@ -137,7 +136,6 @@ class PixelCNN(nn.Module):
             v_stack, h_stack = layer(v_stack, h_stack)
 
         out = self.conv_out(F.elu(h_stack))
-        print(x.size(), out.size())
 
-        out = out.reshape(out.shape[0], self._num_categories, self._num_channels, self._representation_dim, self._representation_dim)
+        out = out.reshape(out.shape[0], self._num_categories, self._num_channels, out.shape[-2], self._representation_dim)
         return out
