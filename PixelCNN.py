@@ -230,22 +230,27 @@ class PixelCNN(nn.Module):
     def __init__(self, config, device):
         super().__init__()
 
-        self.device = device 
-        # Initial convolutions skipping the center pixel
-        self.conv_vstack = VerticalStackConvolution(config.num_channels, config.num_hiddens, mask_center=True)
-        self.conv_hstack = HorizontalStackConvolution(config.num_channels, config.num_hiddens, mask_center=True)
-        # Convolution block of PixelCNN. We use dilation instead of downscaling
+        self.device = device
+        self.num_hiddens = config.num_hiddens
+        self.num_channels = config.num_channels
+        self.num_categories = config.num_categories
+        self.representation_dim = config.representation_dim
+
+        self.conv_vstack = VerticalStackConvolution(self.num_channels, self.num_hiddens, mask_center=True)
+        self.conv_hstack = HorizontalStackConvolution(self.num_channels, self.num_hiddens, mask_center=True)
+
         self.conv_layers = nn.ModuleList([
-            GatedMaskedConv(config.num_hiddens),
-            GatedMaskedConv(config.num_hiddens, dilation=2),
-            GatedMaskedConv(config.num_hiddens),
-            GatedMaskedConv(config.num_hiddens, dilation=4),
-            GatedMaskedConv(config.num_hiddens),
-            GatedMaskedConv(config.num_hiddens, dilation=2),
-            GatedMaskedConv(config.num_hiddens)
+            GatedMaskedConv(self.num_hiddens),
+            GatedMaskedConv(self.num_hiddens, dilation=2),
+            GatedMaskedConv(self.num_hiddens),
+            GatedMaskedConv(self.num_hiddens, dilation=4),
+            GatedMaskedConv(self.num_hiddens),
+            GatedMaskedConv(self.num_hiddens, dilation=2),
+            GatedMaskedConv(self.num_hiddens)
         ])
-        # Output classification convolution (1x1)
-        self.conv_out = nn.Conv2d(config.num_hiddens, config.num_channels * config.num_categories, kernel_size=1, padding=0)
+
+        self.conv_out = nn.Conv2d(self.num_hiddens, self.num_channels * self.num_categories, kernel_size=1, padding=0)
+
         
     def forward(self, x):
         """
@@ -254,7 +259,7 @@ class PixelCNN(nn.Module):
             x - Image tensor with integer values between 0 and 255.
         """
 
-        x = (x.float() / 255.0) * 2 - 1 
+        x = (x.float() / (self.num_categories - 1)) * 2 - 1 
         # Initial convolutions
         v_stack = self.conv_vstack(x)
         h_stack = self.conv_hstack(x)
