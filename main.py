@@ -90,16 +90,9 @@ def train(model, train_loader, optimiser, scheduler):
         X = X.to(model.device)
         optimiser.zero_grad()
 
-        '''X_logits = model((2 * X.float() / 255.0) - 1)
-
-        nll = F.cross_entropy(X_logits, X, reduction='none')
-        prediction_error = nll.mean(dim=[1,2,3])
-        '''
-        # Scale input from 0 to 255 back to -1 to 1
-        #X_norm = (X.float() / 255.0) * 2 - 1 
-        pred = model(X)
-        nll = F.cross_entropy(pred, X, reduction='none')
-        prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
+        X_logits = model(X)
+        cross_entropy = F.cross_entropy(X_logits, X, reduction='none')
+        prediction_error = cross_entropy.mean(dim=[1,2,3]) * np.log2(np.exp(1))
         loss = prediction_error.mean()
 
         loss.backward()
@@ -131,32 +124,25 @@ def test(model, test_loader):
         for X, _ in test_loader:
             X = X.to(model.device)
 
-            '''X_logits = model((2 * X.float() / 255.0) - 1)
-
-            nll = F.cross_entropy(X_logits, X, reduction='none')
-            prediction_error = nll.mean(dim=[1,2,3])
-            loss = prediction_error.mean()'''
-
-            #X_norm = (X.float() / 255.0) * 2 - 1 
-            pred = model(X)
-            nll = F.cross_entropy(pred, X, reduction='none')
-            prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
+            X_logits = model(X)
+            cross_entropy = F.cross_entropy(X_logits, X, reduction='none')
+            prediction_error = cross_entropy.mean(dim=[1,2,3]) * np.log2(np.exp(1))
             loss = prediction_error.mean()
    
             test_res_recon_error += loss.item()
 
         ZY_inter = model.interpolate(Z, Y)
-        X_sample = model.sample(img_shape=(16,1,28,28))
+        X_sample = model.sample()
 
         example_images = [wandb.Image(img.float() / 255.0) for img in X]
-        example_reconstructions = [wandb.Image(recon_img.float() / 255.0) for recon_img in X_sample]
+        example_sample = [wandb.Image(recon_sample.float() / 255.0) for recon_sample in X_sample]
         example_Z = [wandb.Image(recon_img.float() / 255.0) for recon_img in Z]
         example_Y = [wandb.Image(recon_img.float() / 255.0) for recon_img in Y]
         example_interpolations = [wandb.Image(inter_img.float() / 255.0) for inter_img in ZY_inter]
 
     wandb.log({
         "Test Inputs": example_images,
-        "Test Reconstruction": example_reconstructions,
+        "Test Sample": example_sample,
         "Test Interpolations": example_interpolations,
         "Test Z": example_Z,
         "Test Y": example_Y,
