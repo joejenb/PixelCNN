@@ -22,7 +22,7 @@ class VerticalConv(nn.Module):
         return self.conv(x)
 
         
-class HorizontalConv(MaskedConv):
+class HorizontalConv(nn.Module):
     
     def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
         padding = tuple([dilation * (kernel_size[i] - 1) // 2 for i in range(2)])
