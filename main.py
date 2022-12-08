@@ -96,8 +96,8 @@ def train(model, train_loader, optimiser, scheduler):
         prediction_error = nll.mean(dim=[1,2,3])
         '''
         # Scale input from 0 to 255 back to -1 to 1
-        X = (X.float() / 255.0) * 2 - 1 
-        pred = model(X)
+        X_norm = (X.float() / 255.0) * 2 - 1 
+        pred = model(X_norm)
         nll = F.cross_entropy(pred, X, reduction='none')
         prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
         loss = prediction_error.mean()
@@ -137,8 +137,8 @@ def test(model, test_loader):
             prediction_error = nll.mean(dim=[1,2,3])
             loss = prediction_error.mean()'''
 
-            X = (X.float() / 255.0) * 2 - 1 
-            pred = model(X)
+            X_norm = (X.float() / 255.0) * 2 - 1 
+            pred = model(X_norm)
             nll = F.cross_entropy(pred, X, reduction='none')
             prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
             loss = prediction_error.mean()
