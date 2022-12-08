@@ -12,7 +12,7 @@ class VerticalConv(nn.Module):
         padding = (dilation * (kernel_size - 1) // 2, dilation * (kernel_size - 1) // 2)
 
         self.conv = nn.Conv2d(in_channels, out_channels, (kernel_size, kernel_size), padding=padding, dilation=dilation, **kwargs)
-        self.mask = torch.ones(kernel_size, kernel_size)
+        self.mask = torch.ones(kernel_size, kernel_size).to(self.device)
         self.mask[kernel_size // 2 + 1:, :] = 0
         
         if mask_center:
@@ -29,7 +29,7 @@ class HorizontalConv(nn.Module):
         padding = (0, dilation * (kernel_size - 1) // 2)
 
         self.conv = nn.Conv2d(in_channels, out_channels, (1, kernel_size), padding=padding, dilation=dilation, **kwargs)
-        self.mask = torch.ones(1, kernel_size)
+        self.mask = torch.ones(1, kernel_size).to(self.device)
         self.mask[0, kernel_size // 2 + 1:] = 0
         
         if mask_center:
