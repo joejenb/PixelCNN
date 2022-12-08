@@ -7,10 +7,11 @@ import numpy as np
 
 class VerticalConv(nn.Module):
     
-    def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
+    def __init__(self, in_channels, out_channels, device='cpu', kernel_size=3, dilation=1, mask_center=False, **kwargs):
         super().__init__()
         padding = (dilation * (kernel_size - 1) // 2, dilation * (kernel_size - 1) // 2)
 
+        self.device = device
         self.conv = nn.Conv2d(in_channels, out_channels, (kernel_size, kernel_size), padding=padding, dilation=dilation, **kwargs)
         self.mask = torch.ones(kernel_size, kernel_size).to(self.device)
         self.mask[kernel_size // 2 + 1:, :] = 0
@@ -24,10 +25,12 @@ class VerticalConv(nn.Module):
 
 class HorizontalConv(nn.Module):
     
-    def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
+    def __init__(self, in_channels, out_channels, kernel_size=3, device='cpu', dilation=1, mask_center=False, **kwargs):
         super().__init__()
         padding = (0, dilation * (kernel_size - 1) // 2)
 
+        self.device = device
+        self.conv = nn.Conv2d(in_channels, out_channels, (kernel_size, kernel_size), padding=padding, dilation=dilation, **kwargs)
         self.conv = nn.Conv2d(in_channels, out_channels, (1, kernel_size), padding=padding, dilation=dilation, **kwargs)
         self.mask = torch.ones(1, kernel_size).to(self.device)
         self.mask[0, kernel_size // 2 + 1:] = 0
@@ -41,10 +44,10 @@ class HorizontalConv(nn.Module):
 
 class GatedMaskedConv(nn.Module):
     
-    def __init__(self, in_channels, **kwargs):
+    def __init__(self, in_channels, device='cpu', **kwargs):
         super().__init__()
-        self.conv_vert = VerticalConv(in_channels, out_channels= 2 * in_channels, **kwargs)
-        self.conv_horiz = HorizontalConv(in_channels, out_channels= 2 * in_channels, **kwargs)
+        self.conv_vert = VerticalConv(in_channels, out_channels= 2 * in_channels, device=device, **kwargs)
+        self.conv_horiz = HorizontalConv(in_channels, out_channels= 2 * in_channels, device=device, **kwargs)
         self.conv_vert_to_horiz = nn.Conv2d(2 * in_channels, 2 * in_channels, kernel_size=1, padding=0)
         self.conv_horiz_1x1 = nn.Conv2d(in_channels, in_channels, kernel_size=1, padding=0)
     
@@ -77,17 +80,17 @@ class PixelCNN(nn.Module):
         self.num_categories = config.num_categories
         self.representation_dim = config.representation_dim
 
-        self.conv_vstack = VerticalConv(self.num_channels, self.num_hiddens, mask_center=True)
-        self.conv_hstack = HorizontalConv(self.num_channels, self.num_hiddens, mask_center=True)
+        self.conv_vstack = VerticalConv(self.num_channels, self.num_hiddens, device=device, mask_center=True)
+        self.conv_hstack = HorizontalConv(self.num_channels, self.num_hiddens, device=device, mask_center=True)
 
         self.conv_layers = nn.ModuleList([
-            GatedMaskedConv(self.num_hiddens),
-            GatedMaskedConv(self.num_hiddens, dilation=2),
-            GatedMaskedConv(self.num_hiddens),
-            GatedMaskedConv(self.num_hiddens, dilation=4),
-            GatedMaskedConv(self.num_hiddens),
-            GatedMaskedConv(self.num_hiddens, dilation=2),
-            GatedMaskedConv(self.num_hiddens)
+            GatedMaskedConv(self.num_hiddens, device=device),
+            GatedMaskedConv(self.num_hiddens, device=device, dilation=2),
+            GatedMaskedConv(self.num_hiddens, device=device),
+            GatedMaskedConv(self.num_hiddens, device=device, dilation=4),
+            GatedMaskedConv(self.num_hiddens, device=device),
+            GatedMaskedConv(self.num_hiddens, device=device, dilation=2),
+            GatedMaskedConv(self.num_hiddens, device=device)
         ])
 
         self.conv_out = nn.Conv2d(self.num_hiddens, self.num_channels * self.num_categories, kernel_size=1, padding=0)
