@@ -227,25 +227,25 @@ class GatedMaskedConv(nn.Module):
 
 class PixelCNN(nn.Module):
     
-    def __init__(self, c_in, c_hidden, device):
+    def __init__(self, config, device):
         super().__init__()
 
         self.device = device 
         # Initial convolutions skipping the center pixel
-        self.conv_vstack = VerticalStackConvolution(c_in, c_hidden, mask_center=True)
-        self.conv_hstack = HorizontalStackConvolution(c_in, c_hidden, mask_center=True)
+        self.conv_vstack = VerticalStackConvolution(config.num_channels, config.num_hiddens, mask_center=True)
+        self.conv_hstack = HorizontalStackConvolution(config.num_channels, config.num_hiddens, mask_center=True)
         # Convolution block of PixelCNN. We use dilation instead of downscaling
         self.conv_layers = nn.ModuleList([
-            GatedMaskedConv(c_hidden),
-            GatedMaskedConv(c_hidden, dilation=2),
-            GatedMaskedConv(c_hidden),
-            GatedMaskedConv(c_hidden, dilation=4),
-            GatedMaskedConv(c_hidden),
-            GatedMaskedConv(c_hidden, dilation=2),
-            GatedMaskedConv(c_hidden)
+            GatedMaskedConv(config.num_hiddens),
+            GatedMaskedConv(config.num_hiddens, dilation=2),
+            GatedMaskedConv(config.num_hiddens),
+            GatedMaskedConv(config.num_hiddens, dilation=4),
+            GatedMaskedConv(config.num_hiddens),
+            GatedMaskedConv(config.num_hiddens, dilation=2),
+            GatedMaskedConv(config.num_hiddens)
         ])
         # Output classification convolution (1x1)
-        self.conv_out = nn.Conv2d(c_hidden, c_in * 256, kernel_size=1, padding=0)
+        self.conv_out = nn.Conv2d(config.num_hiddens, config.num_channels * config.num_categories, kernel_size=1, padding=0)
         
     def forward(self, x):
         """
@@ -253,9 +253,6 @@ class PixelCNN(nn.Module):
         Inputs:
             x - Image tensor with integer values between 0 and 255.
         """
-        # Scale input from 0 to 255 back to -1 to 1
-        x = (x.float() / 255.0) * 2 - 1 
-        
         # Initial convolutions
         v_stack = self.conv_vstack(x)
         h_stack = self.conv_hstack(x)
@@ -270,13 +267,6 @@ class PixelCNN(nn.Module):
         out = out.reshape(out.shape[0], 256, out.shape[1]//256, out.shape[2], out.shape[3])
         return out
     
-    def calc_likelihood(self, x):
-        # Forward pass with bpd likelihood calculation
-        pred = self.forward(x)
-        nll = F.cross_entropy(pred, x, reduction='none')
-        bpd = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
-        return bpd.mean()
-        
     @torch.no_grad()
     def sample(self, img_shape, img=None):
         """
@@ -303,17 +293,3 @@ class PixelCNN(nn.Module):
                     probs = F.softmax(pred[:,:,c,h,w], dim=-1)
                     img[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
         return img
-    
-    def training_step(self, batch, batch_idx):
-        loss = self.calc_likelihood(batch[0])                             
-        return loss
-    
-    def validation_step(self, batch, batch_idx):
-        loss = self.calc_likelihood(batch[0])
-        return loss
-    
-    def test_step(self, batch, batch_idx):
-        loss = self.calc_likelihood(batch[0])
-        return loss
-
-    

@@ -94,8 +94,13 @@ def train(model, train_loader, optimiser, scheduler):
 
         nll = F.cross_entropy(X_logits, X, reduction='none')
         prediction_error = nll.mean(dim=[1,2,3])
-        loss = prediction_error.mean()'''
-        loss = model.calc_likelihood(X)
+        '''
+        # Scale input from 0 to 255 back to -1 to 1
+        X = (X.float() / 255.0) * 2 - 1 
+        pred = model(X)
+        nll = F.cross_entropy(pred, X, reduction='none')
+        prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
+        loss = prediction_error.mean()
 
         loss.backward()
         optimiser.step()
@@ -132,8 +137,12 @@ def test(model, test_loader):
             prediction_error = nll.mean(dim=[1,2,3])
             loss = prediction_error.mean()'''
 
-            loss = model.calc_likelihood(X)
-            
+            X = (X.float() / 255.0) * 2 - 1 
+            pred = model(X)
+            nll = F.cross_entropy(pred, X, reduction='none')
+            prediction_error = nll.mean(dim=[1,2,3]) * np.log2(np.exp(1))
+            loss = prediction_error.mean()
+   
             test_res_recon_error += loss.item()
 
         #ZY_inter = model.interpolate(Z, Y)
