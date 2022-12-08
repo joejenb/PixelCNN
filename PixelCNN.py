@@ -43,8 +43,8 @@ class GatedMaskedConv(nn.Module):
     
     def __init__(self, in_channels, **kwargs):
         super().__init__()
-        self.conv_vert = VerticalConv(in_channels, c_out= 2 * in_channels, **kwargs)
-        self.conv_horiz = HorizontalConv(in_channels, c_out= 2 * in_channels, **kwargs)
+        self.conv_vert = VerticalConv(in_channels, out_channels= 2 * in_channels, **kwargs)
+        self.conv_horiz = HorizontalConv(in_channels, out_channels= 2 * in_channels, **kwargs)
         self.conv_vert_to_horiz = nn.Conv2d(2 * in_channels, 2 * in_channels, kernel_size=1, padding=0)
         self.conv_horiz_1x1 = nn.Conv2d(in_channels, in_channels, kernel_size=1, padding=0)
     
