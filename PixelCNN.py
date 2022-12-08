@@ -8,6 +8,7 @@ import numpy as np
 class VerticalConv(nn.Module):
     
     def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
+        super().__init__()
         padding = (dilation * (kernel_size - 1) // 2, dilation * (kernel_size - 1) // 2)
 
         self.conv = nn.Conv2d(in_channels, out_channels, (kernel_size, kernel_size), padding=padding, dilation=dilation, **kwargs)
@@ -24,6 +25,7 @@ class VerticalConv(nn.Module):
 class HorizontalConv(nn.Module):
     
     def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
+        super().__init__()
         padding = (0, dilation * (kernel_size - 1) // 2)
 
         self.conv = nn.Conv2d(in_channels, out_channels, (1, kernel_size), padding=padding, dilation=dilation, **kwargs)
