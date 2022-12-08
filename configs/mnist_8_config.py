@@ -6,7 +6,7 @@ config["seed"] = 1265
 config["log_interval"] = 1     # how many batches to wait before logging training status
 config["learning_rate"] = 1e-3
 config["momentum"] = 0.1
-config["gamma"] = 0.90
+config["gamma"] = 0.96
 config["weight_decay"] = 0.0
 
 config["num_hiddens"] = 128
