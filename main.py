@@ -145,19 +145,19 @@ def test(model, test_loader):
    
             test_res_recon_error += loss.item()
 
-        #ZY_inter = model.interpolate(Z, Y)
+        ZY_inter = model.interpolate(Z, Y)
         X_sample = model.sample(img_shape=(16,1,28,28))
 
         example_images = [wandb.Image(img.float() / 255.0) for img in X]
         example_reconstructions = [wandb.Image(recon_img.float() / 255.0) for recon_img in X_sample]
         example_Z = [wandb.Image(recon_img.float() / 255.0) for recon_img in Z]
         example_Y = [wandb.Image(recon_img.float() / 255.0) for recon_img in Y]
-        #example_interpolations = [wandb.Image(inter_img.float() / 255.0) for inter_img in ZY_inter]
+        example_interpolations = [wandb.Image(inter_img.float() / 255.0) for inter_img in ZY_inter]
 
     wandb.log({
         "Test Inputs": example_images,
         "Test Reconstruction": example_reconstructions,
-        #"Test Interpolations": example_interpolations,
+        "Test Interpolations": example_interpolations,
         "Test Z": example_Z,
         "Test Y": example_Y,
         "Test Reconstruction Error": test_res_recon_error / len(test_loader.dataset)
