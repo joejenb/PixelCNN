@@ -8,9 +8,9 @@ import numpy as np
 class VerticalConv(nn.Module):
     
     def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
-        padding = tuple([dilation * (kernel_size[i] - 1) // 2 for i in range(2)])
+        padding = (dilation * (kernel_size - 1) // 2, dilation * (kernel_size - 1) // 2)
 
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding, dilation=dilation, **kwargs)
+        self.conv = nn.Conv2d(in_channels, out_channels, (kernel_size, kernel_size), padding=padding, dilation=dilation, **kwargs)
         self.mask = torch.ones(kernel_size, kernel_size)
         self.mask[kernel_size // 2 + 1:, :] = 0
         
@@ -21,13 +21,12 @@ class VerticalConv(nn.Module):
         self.conv.weight.data *= self.mask.detach()
         return self.conv(x)
 
-        
 class HorizontalConv(nn.Module):
     
     def __init__(self, in_channels, out_channels, kernel_size=3, dilation=1, mask_center=False, **kwargs):
-        padding = tuple([dilation * (kernel_size[i] - 1) // 2 for i in range(2)])
+        padding = (0, dilation * (kernel_size - 1) // 2)
 
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding, dilation=dilation, **kwargs)
+        self.conv = nn.Conv2d(in_channels, out_channels, (1, kernel_size), padding=padding, dilation=dilation, **kwargs)
         self.mask = torch.ones(1, kernel_size)
         self.mask[0, kernel_size // 2 + 1:] = 0
         
@@ -37,6 +36,7 @@ class HorizontalConv(nn.Module):
     def forward(self, x):
         self.conv.weight.data *= self.mask.detach()
         return self.conv(x)
+
 class GatedMaskedConv(nn.Module):
     
     def __init__(self, in_channels, **kwargs):
