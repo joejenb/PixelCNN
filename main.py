@@ -90,11 +90,12 @@ def train(model, train_loader, optimiser, scheduler):
         X = X.to(model.device)
         optimiser.zero_grad()
 
-        X_logits = model((2 * X.float() / 255.0) - 1)
+        '''X_logits = model((2 * X.float() / 255.0) - 1)
 
         nll = F.cross_entropy(X_logits, X, reduction='none')
         prediction_error = nll.mean(dim=[1,2,3])
-        loss = prediction_error.mean()
+        loss = prediction_error.mean()'''
+        loss = model.calc_likelihood(X)
 
         loss.backward()
         optimiser.step()
@@ -125,27 +126,29 @@ def test(model, test_loader):
         for X, _ in test_loader:
             X = X.to(model.device)
 
-            X_logits = model((2 * X.float() / 255.0) - 1)
+            '''X_logits = model((2 * X.float() / 255.0) - 1)
 
             nll = F.cross_entropy(X_logits, X, reduction='none')
             prediction_error = nll.mean(dim=[1,2,3])
-            loss = prediction_error.mean()
+            loss = prediction_error.mean()'''
+
+            loss = model.calc_likelihood(X)
             
             test_res_recon_error += loss.item()
 
-        ZY_inter = model.interpolate(Z, Y)
-        X_sample = model.sample()
+        #ZY_inter = model.interpolate(Z, Y)
+        X_sample = model.sample(img_shape=(16,1,28,28))
 
         example_images = [wandb.Image(img.float() / 255.0) for img in X]
         example_reconstructions = [wandb.Image(recon_img.float() / 255.0) for recon_img in X_sample]
         example_Z = [wandb.Image(recon_img.float() / 255.0) for recon_img in Z]
         example_Y = [wandb.Image(recon_img.float() / 255.0) for recon_img in Y]
-        example_interpolations = [wandb.Image(inter_img.float() / 255.0) for inter_img in ZY_inter]
+        #example_interpolations = [wandb.Image(inter_img.float() / 255.0) for inter_img in ZY_inter]
 
     wandb.log({
         "Test Inputs": example_images,
         "Test Reconstruction": example_reconstructions,
-        "Test Interpolations": example_interpolations,
+        #"Test Interpolations": example_interpolations,
         "Test Z": example_Z,
         "Test Y": example_Y,
         "Test Reconstruction Error": test_res_recon_error / len(test_loader.dataset)
@@ -162,7 +165,9 @@ def main():
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
     ### Add in correct parameters
-    model = PixelCNN(config, device).to(device)
+    #model = PixelCNN(config, device).to(device)
+    model = PixelCNN(config.num_channels, config.num_hiddens, device).to(device)
+
     if os.path.exists(checkpoint_location):
         model.load_state_dict(torch.load(checkpoint_location, map_location=device))
 
