@@ -175,7 +175,7 @@ def main():
 
     ### Add in correct parameters
     #model = PixelCNN(config, device).to(device)
-    model = PixelCNN(config.num_channels, config.num_hiddens, device).to(device)
+    model = PixelCNN(config, device).to(device)
 
     if os.path.exists(checkpoint_location):
         model.load_state_dict(torch.load(checkpoint_location, map_location=device))
