@@ -250,8 +250,44 @@ class PixelCNN(nn.Module):
         ])
 
         self.conv_out = nn.Conv2d(self.num_hiddens, self.num_channels * self.num_categories, kernel_size=1, padding=0)
-
+   
+    def sample(self, img_shape, img=None):
+        # Create empty image
+        if img is None:
+            img = torch.zeros(img_shape, dtype=torch.long).to(self.device) - 1
+        # Generation loop
+        for h in range(img_shape[2]):
+            for w in range(img_shape[3]):
+                for c in range(img_shape[1]):
+                    # Skip if not to be filled (-1)
+                    if (img[:,c,h,w] != -1).all().item():
+                        continue
+                    # For efficiency, we only have to input the upper part of the image
+                    # as all other parts will be skipped by the masked convolutions anyways
+                    pred = self.forward(img[:,:,:h+1,:]) 
+                    probs = F.softmax(pred[:,:,c,h,w], dim=-1)
+                    img[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
+        return img
         
+    def interpolate(self, x, y):
+        xy_inter = (x + y) / 2
+        xy_inter = self.denoise(xy_inter)        
+
+        return xy_inter
+
+    def denoise(self, x):
+        x_new = x
+
+        for h in range(self.representation_dim):
+            for w in range(self.representation_dim):
+                for c in range(self.num_channels):
+
+                    pred = self.forward(x[:,:,:h+1,:])
+                    probs = F.softmax(pred[:,:,c,h,w], dim=-1)
+                    x_new[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
+
+        return x_new
+
     def forward(self, x):
         """
         Forward image through model and return logits for each pixel.
@@ -274,29 +310,3 @@ class PixelCNN(nn.Module):
         out = out.reshape(out.shape[0], 256, out.shape[1]//256, out.shape[2], out.shape[3])
         return out
     
-    @torch.no_grad()
-    def sample(self, img_shape, img=None):
-        """
-        Sampling function for the autoregressive model.
-        Inputs:
-            img_shape - Shape of the image to generate (B,C,H,W)
-            img (optional) - If given, this tensor will be used as
-                             a starting image. The pixels to fill 
-                             should be -1 in the input tensor.
-        """
-        # Create empty image
-        if img is None:
-            img = torch.zeros(img_shape, dtype=torch.long).to(self.device) - 1
-        # Generation loop
-        for h in range(img_shape[2]):
-            for w in range(img_shape[3]):
-                for c in range(img_shape[1]):
-                    # Skip if not to be filled (-1)
-                    if (img[:,c,h,w] != -1).all().item():
-                        continue
-                    # For efficiency, we only have to input the upper part of the image
-                    # as all other parts will be skipped by the masked convolutions anyways
-                    pred = self.forward(img[:,:,:h+1,:]) 
-                    probs = F.softmax(pred[:,:,c,h,w], dim=-1)
-                    img[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
-        return img
