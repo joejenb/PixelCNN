@@ -253,6 +253,8 @@ class PixelCNN(nn.Module):
         Inputs:
             x - Image tensor with integer values between 0 and 255.
         """
+
+        x = (x.float() / 255.0) * 2 - 1 
         # Initial convolutions
         v_stack = self.conv_vstack(x)
         h_stack = self.conv_hstack(x)
@@ -280,7 +282,6 @@ class PixelCNN(nn.Module):
         # Create empty image
         if img is None:
             img = torch.zeros(img_shape, dtype=torch.long).to(self.device) - 1
-            img = (img.float() / 255.0) * 2 - 1 
         # Generation loop
         for h in range(img_shape[2]):
             for w in range(img_shape[3]):
