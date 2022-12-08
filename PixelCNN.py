@@ -289,7 +289,7 @@ class PixelCNN(nn.Module):
         """
         # Create empty image
         if img is None:
-            img = torch.zeros(img_shape, dtype=torch.long).to(device) - 1
+            img = torch.zeros(img_shape, dtype=torch.long).to(self.device) - 1
         # Generation loop
         for h in range(img_shape[2]):
             for w in range(img_shape[3]):
