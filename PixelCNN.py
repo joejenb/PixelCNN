@@ -119,13 +119,9 @@ class PixelCNN(nn.Module):
     def denoise(self, x):
         x_new = x
 
-        for h in range(self.representation_dim):
-            for w in range(self.representation_dim):
-                for c in range(self.num_channels):
-
-                    pred = self.forward(x[:,:,:h+1,:])
-                    probs = F.softmax(pred[:,:,c,h,w], dim=-1)
-                    x_new[:,c,h,w] = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
+        pred = self.forward(x)
+        probs = F.softmax(pred, dim=-1)
+        x_new = torch.multinomial(probs, num_samples=1).squeeze(dim=-1)
 
         return x_new
 
