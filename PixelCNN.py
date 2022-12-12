@@ -121,7 +121,7 @@ class PixelCNN(nn.Module):
         pred = self.forward(x)
         pred = pred.permute(0, 2, 3, 4, 1).contiguous()
 
-        pred_shape = pred.shape
+        pred_shape = pred.size()
         pred_shape[-1] = 1
 
         pred = pred.view(-1, self.num_categories)
