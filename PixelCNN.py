@@ -121,15 +121,14 @@ class PixelCNN(nn.Module):
         pred = self.forward(x)
         pred = pred.permute(0, 2, 3, 4, 1).contiguous()
 
-        pred_shape = pred.size()
-        pred_shape[-1] = 1
+        pred_shape = pred.shape
 
         pred = pred.view(-1, self.num_categories)
 
         probs = F.softmax(pred, dim=-1)
 
         x_new = torch.multinomial(probs, num_samples=1)
-        x_new = x_new.view(pred_shape)
+        x_new = x_new.view(pred_shape[0], pred_shape[1], pred_shape[2], pred_shape[3], 1)
         x_new = x_new.permute(0, 4, 1, 2, 3).contiguous().squeeze(1)
 
         return x_new
