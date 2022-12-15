@@ -174,10 +174,12 @@ def main():
     for epoch in range(config.epochs):
 
         train(model, train_loader, optimiser, scheduler)
-        test(model, test_loader)
 
         if not epoch % 5:
             torch.save(model.state_dict(), output_location)
+
+        if not epoch % 10:
+            test(model, test_loader)
 
 if __name__ == '__main__':
     main()
