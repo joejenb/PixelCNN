@@ -116,20 +116,22 @@ class PixelCNN(nn.Module):
 
         return xy_inter
 
-    def denoise(self, x):
+    def reconstruct(self, x):
 
-        pred = self.forward(x)
-        pred = pred.permute(0, 2, 3, 4, 1).contiguous()
+        for i in range(10):
+            pred = self.forward(x)
+            pred = pred.permute(0, 2, 3, 4, 1).contiguous()
 
-        pred_shape = pred.shape
+            pred_shape = pred.shape
 
-        pred = pred.view(-1, self.num_categories)
+            pred = pred.view(-1, self.num_categories)
 
-        probs = F.softmax(pred, dim=-1)
+            probs = F.softmax(pred, dim=-1)
 
-        x_new = torch.multinomial(probs, num_samples=1)
-        x_new = x_new.view(pred_shape[0], pred_shape[1], pred_shape[2], pred_shape[3], 1)
-        x_new = x_new.permute(0, 4, 1, 2, 3).contiguous().squeeze(1)
+            x_new = torch.multinomial(probs, num_samples=1)
+            x_new = x_new.view(pred_shape[0], pred_shape[1], pred_shape[2], pred_shape[3], 1)
+            x_new = x_new.permute(0, 4, 1, 2, 3).contiguous().squeeze(1)
+            x = x_new
 
         return x_new
 

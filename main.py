@@ -160,7 +160,6 @@ def main():
     output_location = f'outputs/{config.data_set}-{config.image_size}.ckpt'
 
     ### Add in correct parameters
-    #model = PixelCNN(config, device).to(device)
     model = PixelCNN(config, device).to(device)
 
     if os.path.exists(checkpoint_location):
