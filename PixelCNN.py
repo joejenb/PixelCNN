@@ -112,7 +112,7 @@ class PixelCNN(nn.Module):
         
     def interpolate(self, x, y):
         xy_inter = (x + y) / 2
-        xy_inter = self.denoise(xy_inter)        
+        xy_inter = self.reconstruct(xy_inter)        
 
         return xy_inter
 
