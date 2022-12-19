@@ -9,7 +9,7 @@ config["momentum"] = 0.1
 config["gamma"] = 0.96
 config["weight_decay"] = 0.0
 
-config["num_hiddens"] = 128
+config["num_hiddens"] = 64
 config["num_channels"] = 1
 config["data_set"] = "MNIST"
 config["representation_dim"] = 8
